@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f5f4f0">
+    <title>v o n d i s h - Links</title>
+    <style>
+      :root {
+        color-scheme: light;
+        background: #f5f4f0;
+        color: #41413f;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        font-synthesis: none;
+        text-rendering: optimizeLegibility;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        min-width: 320px;
+        min-height: 100vh;
+        min-height: 100svh;
+        margin: 0;
+      }
+
+      h1 {
+        margin: 0;
+        padding: 1.5rem;
+        font-size: 0.75rem;
+        font-variant-caps: all-small-caps;
+        font-weight: 400;
+        letter-spacing: 0.2em;
+      }
+
+      .links {
+        position: fixed;
+        top: 50%;
+        right: 0.75rem;
+        width: min(70vw, 24rem);
+        max-height: calc(100svh - 3rem);
+        overflow-y: auto;
+        padding: 1rem 0 1rem 1rem;
+        transform: translateY(-50%);
+        scrollbar-color: #c9c3bd transparent;
+        scrollbar-width: thin;
+        text-align: right;
+        touch-action: pan-y;
+      }
+
+      .current-letter {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        display: block;
+        width: fit-content;
+        min-width: 1.5rem;
+        margin: 0 0 0.5rem auto;
+        border: 1px solid #b33a32;
+        border-radius: 50%;
+        color: #b33a32;
+        font-size: 0.7rem;
+        line-height: 1.4rem;
+        text-align: center;
+        opacity: 0;
+        transition: opacity 120ms ease;
+      }
+
+      .links[data-active="true"] .current-letter {
+        opacity: 1;
+      }
+
+      .link-list {
+        display: grid;
+        justify-items: end;
+        gap: 0.15rem;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .link-list li {
+        display: flex;
+        align-items: baseline;
+        gap: 0.55rem;
+        min-height: 1.3em;
+      }
+
+      .link-list a {
+        display: inline-block;
+        color: #b33a32;
+        font-size: calc(0.78rem * var(--wave-scale, 1));
+        font-weight: 400;
+        line-height: 1.3;
+        text-decoration: none;
+        white-space: nowrap;
+        transition: color 140ms ease;
+      }
+
+      .link-list a.wave-active,
+      .link-list a:focus-visible {
+        color: #7e201b;
+        outline: none;
+      }
+
+      .link-list a:focus-visible {
+        text-decoration: underline;
+        text-underline-offset: 0.2em;
+      }
+
+      .visually-hidden {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        clip-path: inset(50%);
+      }
+
+      @media (max-width: 480px) {
+        h1 {
+          padding: 1rem;
+        }
+
+        .links {
+          right: 0.5rem;
+          width: min(78vw, 20rem);
+          max-height: calc(100svh - 2rem);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          scroll-behavior: auto !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Links</h1>
+      <nav class="links" aria-label="Links">
+        <span class="current-letter" aria-hidden="true"></span>
+        <ol class="link-list"></ol>
+      </nav>
+    </main>
+
+    <script>
+      const links = [
+        { label: "Are.na", href: "https://www.are.na/" },
+        { label: "Bandcamp", href: "https://bandcamp.com/" },
+        { label: "Craigslist", href: "https://www.craigslist.org/" },
+        { label: "GitHub", href: "https://github.com/" },
+        { label: "Google", href: "https://www.google.com/" },
+        { label: "Home", href: "index.html" },
+        { label: "Internet Archive", href: "https://archive.org/" },
+        { label: "Letterboxd", href: "https://letterboxd.com/" },
+        { label: "MDN Web Docs", href: "https://developer.mozilla.org/" },
+        { label: "Notes", href: "notes.html" },
+        { label: "NPR", href: "https://www.npr.org/" },
+        { label: "Project Gutenberg", href: "https://www.gutenberg.org/" },
+        { label: "Radio Garden", href: "https://radio.garden/" },
+        { label: "The New York Times", href: "https://www.nytimes.com/" },
+        { label: "Wikipedia", href: "https://www.wikipedia.org/" },
+        { label: "YouTube", href: "https://www.youtube.com/" },
+      ];
+
+      const nav = document.querySelector(".links");
+      const list = document.querySelector(".link-list");
+      const currentLetter = document.querySelector(".current-letter");
+
+      links.sort((a, b) => a.label.localeCompare(b.label, "en", {
+        sensitivity: "base",
+      }));
+
+      for (const { label, href } of links) {
+        const item = document.createElement("li");
+        const anchor = document.createElement("a");
+        anchor.href = href;
+        anchor.textContent = label;
+        item.append(anchor);
+        list.append(item);
+      }
+
+      const anchors = [...list.querySelectorAll("a")];
+      let touchPointerId = null;
+      const rows = [...list.querySelectorAll("li")];
+      let baseCenters = [];
+      let baseHeights = [];
+      let scales = anchors.map(() => 1);
+      let appliedScales = anchors.map(() => "");
+      let pointerY = null;
+      let waveEnabled = false;
+      let animationFrame = null;
+      let activeIndex = -1;
+
+      function measureBaseLayout() {
+        const metrics = rows.map((row) => {
+          const bounds = row.getBoundingClientRect();
+          return {
+            center: bounds.top + bounds.height / 2 - window.innerHeight / 2,
+            height: bounds.height,
+          };
+        });
+        baseCenters = metrics.map(({ center }) => center);
+        baseHeights = metrics.map(({ height }) => height);
+      }
+
+      measureBaseLayout();
+
+      function linkAtPoint(x, y) {
+        const target = document.elementFromPoint(x, y);
+        const anchor = target instanceof Element ? target.closest("a") : null;
+        return anchor && list.contains(anchor) ? anchor : null;
+      }
+
+      function animateWave() {
+        animationFrame = null;
+        const totalGrowth = scales.reduce((total, scale, index) => (
+          total + baseHeights[index] * (scale - 1)
+        ), 0);
+        let growthBefore = 0;
+        let nearestIndex = -1;
+        let nearestDistance = Infinity;
+        let stillAnimating = false;
+
+        anchors.forEach((anchor, index) => {
+          const growth = baseHeights[index] * (scales[index] - 1);
+          const center = baseCenters[index] + growthBefore + growth / 2 - totalGrowth / 2;
+          growthBefore += growth;
+
+          if (waveEnabled) {
+            const distance = Math.abs(center + window.innerHeight / 2 - pointerY);
+            if (distance < nearestDistance) {
+              nearestDistance = distance;
+              nearestIndex = index;
+            }
+          }
+        });
+
+        growthBefore = 0;
+        anchors.forEach((anchor, index) => {
+          const growth = baseHeights[index] * (scales[index] - 1);
+          const center = baseCenters[index] + growthBefore + growth / 2 - totalGrowth / 2;
+          growthBefore += growth;
+          const distance = Math.abs(center + window.innerHeight / 2 - pointerY);
+          const targetScale = waveEnabled
+            ? 1 + 1.4 * Math.exp(-((distance / 32) ** 2))
+            : 1;
+          const nextScale = scales[index] + (targetScale - scales[index]) * 0.55;
+
+          if (Math.abs(targetScale - nextScale) < 0.008) {
+            scales[index] = targetScale;
+          } else {
+            scales[index] = nextScale;
+            stillAnimating = true;
+          }
+          const scaleText = scales[index].toFixed(3);
+          if (scaleText !== appliedScales[index]) {
+            anchor.style.setProperty("--wave-scale", scaleText);
+            appliedScales[index] = scaleText;
+          }
+        });
+
+        if (nearestIndex !== activeIndex) {
+          activeIndex = nearestIndex;
+          anchors.forEach((anchor, index) => {
+            anchor.classList.toggle("wave-active", index === activeIndex);
+          });
+          currentLetter.textContent = activeIndex === -1
+            ? ""
+            : anchors[activeIndex].textContent.trim().charAt(0).toLocaleUpperCase("en");
+        }
+
+        if (stillAnimating) animationFrame = requestAnimationFrame(animateWave);
+      }
+
+      function scheduleWave() {
+        if (animationFrame === null) {
+          animationFrame = requestAnimationFrame(animateWave);
+        }
+      }
+
+      function showWaveAt(y) {
+        pointerY = y;
+        waveEnabled = true;
+        nav.dataset.active = "true";
+        scheduleWave();
+      }
+
+      function resetWave() {
+        waveEnabled = false;
+        pointerY = null;
+        nav.dataset.active = "false";
+        scheduleWave();
+      }
+
+      function stopTouchInteraction() {
+        if (touchPointerId === null) return;
+
+        const pointerId = touchPointerId;
+        touchPointerId = null;
+        if (nav.hasPointerCapture(pointerId)) {
+          nav.releasePointerCapture(pointerId);
+        }
+        resetWave();
+      }
+
+      nav.addEventListener("pointermove", (event) => {
+        if (event.pointerType === "touch") {
+          if (event.pointerId !== touchPointerId) return;
+
+          const bounds = touchBounds;
+          if (
+            event.clientX < bounds.left ||
+            event.clientX > bounds.right ||
+            event.clientY < bounds.top ||
+            event.clientY > bounds.bottom
+          ) {
+            stopTouchInteraction();
+            return;
+          }
+
+          showWaveAt(event.clientY);
+          return;
+        }
+
+        if (event.pointerType === "mouse") {
+          showWaveAt(event.clientY);
+        }
+      });
+
+      let touchBounds = null;
+
+      nav.addEventListener("pointerdown", (event) => {
+        if (event.pointerType !== "touch" || !event.isPrimary) return;
+
+        const anchor = linkAtPoint(event.clientX, event.clientY);
+        if (!anchor) return;
+
+        event.preventDefault();
+        touchPointerId = event.pointerId;
+        touchBounds = nav.getBoundingClientRect();
+        nav.setPointerCapture(event.pointerId);
+        showWaveAt(event.clientY);
+      });
+
+      nav.addEventListener("pointerup", (event) => {
+        if (event.pointerId !== touchPointerId) return;
+
+        const bounds = touchBounds;
+        const insideLinks = (
+          event.clientX >= bounds.left &&
+          event.clientX <= bounds.right &&
+          event.clientY >= bounds.top &&
+          event.clientY <= bounds.bottom
+        );
+        const anchor = insideLinks
+          ? linkAtPoint(event.clientX, event.clientY)
+          : null;
+
+        stopTouchInteraction();
+        if (anchor) window.location.assign(anchor.href);
+      });
+
+      nav.addEventListener("pointercancel", stopTouchInteraction);
+      nav.addEventListener("lostpointercapture", stopTouchInteraction);
+      nav.addEventListener("pointerleave", (event) => {
+        if (event.pointerType === "mouse" && touchPointerId === null) {
+          resetWave();
+        }
+      });
+
+      list.addEventListener("focusin", (event) => {
+        const anchor = event.target instanceof Element
+          ? event.target.closest("a")
+          : null;
+        if (!anchor) return;
+
+        const bounds = anchor.getBoundingClientRect();
+        showWaveAt(bounds.top + bounds.height / 2);
+      });
+
+      list.addEventListener("focusout", (event) => {
+        if (!list.contains(event.relatedTarget)) resetWave();
+      });
+
+      window.addEventListener("resize", () => {
+        if (waveEnabled || touchPointerId !== null) return;
+        measureBaseLayout();
+      });
+    </script>
+  </body>
+</html>
