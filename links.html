@@ -71,6 +71,47 @@
         opacity: 1;
       }
 
+      .touch-preview {
+        position: fixed;
+        z-index: 3;
+        top: 0;
+        left: 0;
+        width: min(16rem, calc(100vw - 2rem));
+        padding: 0.65rem 0.8rem;
+        border: 1px solid rgba(179, 58, 50, 0.22);
+        border-radius: 0.45rem;
+        background: rgba(245, 244, 240, 0.96);
+        box-shadow: 0 4px 18px rgba(65, 65, 63, 0.12);
+        color: #41413f;
+        opacity: 0;
+        pointer-events: none;
+        transform: translateY(0.35rem);
+        transition:
+          opacity 100ms ease,
+          transform 140ms ease;
+      }
+
+      .touch-preview[data-visible="true"] {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .touch-preview-name {
+        display: block;
+        color: #b33a32;
+        font-size: 0.9rem;
+        line-height: 1.25;
+      }
+
+      .touch-preview-url {
+        display: block;
+        margin-top: 0.15rem;
+        color: #77716c;
+        font-size: 0.68rem;
+        line-height: 1.25;
+        overflow-wrap: anywhere;
+      }
+
       .link-list {
         display: grid;
         justify-items: end;
@@ -148,6 +189,10 @@
         <span class="current-letter" aria-hidden="true"></span>
         <ol class="link-list"></ol>
       </nav>
+      <aside class="touch-preview" aria-hidden="true">
+        <span class="touch-preview-name"></span>
+        <span class="touch-preview-url"></span>
+      </aside>
     </main>
 
     <script>
@@ -173,6 +218,9 @@
       const nav = document.querySelector(".links");
       const list = document.querySelector(".link-list");
       const currentLetter = document.querySelector(".current-letter");
+      const touchPreview = document.querySelector(".touch-preview");
+      const touchPreviewName = document.querySelector(".touch-preview-name");
+      const touchPreviewUrl = document.querySelector(".touch-preview-url");
 
       links.sort((a, b) => a.label.localeCompare(b.label, "en", {
         sensitivity: "base",
@@ -198,6 +246,7 @@
       let waveEnabled = false;
       let animationFrame = null;
       let activeIndex = -1;
+      let touchPosition = null;
 
       function fitLinksToViewport() {
         const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
@@ -293,6 +342,7 @@
           currentLetter.textContent = activeIndex === -1
             ? ""
             : anchors[activeIndex].textContent.trim().charAt(0).toLocaleUpperCase("en");
+          updateTouchPreview();
         }
 
         if (stillAnimating) animationFrame = requestAnimationFrame(animateWave);
@@ -311,10 +361,39 @@
         scheduleWave();
       }
 
+      function updateTouchPreview() {
+        if (touchPointerId === null || activeIndex === -1) return;
+
+        const anchor = anchors[activeIndex];
+        const destination = new URL(anchor.href);
+        const viewportWidth = window.visualViewport?.width ?? window.innerWidth;
+        const previewWidth = Math.min(256, viewportWidth - 32);
+        const isRightSide = touchPosition.x >= viewportWidth / 2;
+        const left = isRightSide
+          ? Math.max(16, touchPosition.x - previewWidth - 24)
+          : Math.min(viewportWidth - previewWidth - 16, touchPosition.x + 24);
+        const top = Math.min(
+          Math.max(16, touchPosition.y - 72),
+          (window.visualViewport?.height ?? window.innerHeight) - 72,
+        );
+
+        touchPreviewName.textContent = anchor.textContent.trim();
+        touchPreviewUrl.textContent = destination.host || destination.pathname;
+        touchPreview.style.left = `${left}px`;
+        touchPreview.style.top = `${top}px`;
+        touchPreview.dataset.visible = "true";
+      }
+
+      function hideTouchPreview() {
+        touchPreview.dataset.visible = "false";
+        touchPosition = null;
+      }
+
       function resetWave() {
         waveEnabled = false;
         pointerY = null;
         nav.dataset.active = "false";
+        hideTouchPreview();
         scheduleWave();
       }
 
@@ -344,6 +423,8 @@
             return;
           }
 
+          touchPosition = { x: event.clientX, y: event.clientY };
+          updateTouchPreview();
           showWaveAt(event.clientY);
           return;
         }
@@ -364,6 +445,7 @@
         event.preventDefault();
         touchPointerId = event.pointerId;
         touchBounds = nav.getBoundingClientRect();
+        touchPosition = { x: event.clientX, y: event.clientY };
         nav.setPointerCapture(event.pointerId);
         showWaveAt(event.clientY);
       });
@@ -383,7 +465,7 @@
           : null;
 
         stopTouchInteraction();
-        if (anchor) window.location.assign(anchor.href);
+        if (anchor) anchor.click();
       });
 
       nav.addEventListener("pointercancel", stopTouchInteraction);
