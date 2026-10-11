@@ -40,24 +40,23 @@
         top: 50%;
         right: 0.75rem;
         width: min(70vw, 24rem);
-        max-height: calc(100svh - 3rem);
-        overflow-y: auto;
-        padding: 1rem 0 1rem 1rem;
+        padding: 2rem 0 0 1rem;
         transform: translateY(-50%);
-        scrollbar-color: #c9c3bd transparent;
-        scrollbar-width: thin;
         text-align: right;
-        touch-action: pan-y;
+        touch-action: none;
+        -webkit-user-select: none;
+        user-select: none;
       }
 
       .current-letter {
-        position: sticky;
+        position: absolute;
         top: 0;
+        right: 0;
         z-index: 1;
         display: block;
         width: fit-content;
         min-width: 1.5rem;
-        margin: 0 0 0.5rem auto;
+        margin: 0;
         border: 1px solid #b33a32;
         border-radius: 50%;
         color: #b33a32;
@@ -75,23 +74,24 @@
       .link-list {
         display: grid;
         justify-items: end;
-        gap: 0.15rem;
+        gap: 0.12em;
         margin: 0;
         padding: 0;
+        font-size: var(--base-font-size, 0.78rem);
         list-style: none;
       }
 
       .link-list li {
         display: flex;
         align-items: baseline;
-        gap: 0.55rem;
+        gap: 0.55em;
         min-height: 1.3em;
       }
 
       .link-list a {
         display: inline-block;
         color: #b33a32;
-        font-size: calc(0.78rem * var(--wave-scale, 1));
+        font-size: calc(var(--base-font-size, 0.78rem) * var(--wave-scale, 1));
         font-weight: 400;
         line-height: 1.3;
         text-decoration: none;
@@ -128,7 +128,6 @@
         .links {
           right: 0.5rem;
           width: min(78vw, 20rem);
-          max-height: calc(100svh - 2rem);
         }
       }
 
@@ -200,6 +199,24 @@
       let animationFrame = null;
       let activeIndex = -1;
 
+      function fitLinksToViewport() {
+        const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
+        const rowUnits = anchors.length * 1.3 + (anchors.length - 1) * 0.12;
+        const waveHeadroom = Math.min(72, viewportHeight * 0.3);
+        const baseFontSize = Math.min(
+          12.48,
+          Math.max(1, (viewportHeight - 32 - waveHeadroom) / rowUnits),
+        );
+        list.style.setProperty("--base-font-size", `${baseFontSize}px`);
+        scales = anchors.map(() => 1);
+        appliedScales = anchors.map(() => "");
+        anchors.forEach((anchor) => {
+          anchor.style.setProperty("--wave-scale", "1");
+        });
+        measureBaseLayout();
+        if (waveEnabled) scheduleWave();
+      }
+
       function measureBaseLayout() {
         const metrics = rows.map((row) => {
           const bounds = row.getBoundingClientRect();
@@ -212,7 +229,7 @@
         baseHeights = metrics.map(({ height }) => height);
       }
 
-      measureBaseLayout();
+      fitLinksToViewport();
 
       function linkAtPoint(x, y) {
         const target = document.elementFromPoint(x, y);
@@ -391,10 +408,8 @@
         if (!list.contains(event.relatedTarget)) resetWave();
       });
 
-      window.addEventListener("resize", () => {
-        if (waveEnabled || touchPointerId !== null) return;
-        measureBaseLayout();
-      });
+      window.addEventListener("resize", fitLinksToViewport);
+      window.visualViewport?.addEventListener("resize", fitLinksToViewport);
     </script>
   </body>
 </html>
