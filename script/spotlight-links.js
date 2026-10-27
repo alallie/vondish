@@ -45,9 +45,9 @@
     .ss-checkbox{width:17px;height:17px;accent-color:#8296ff}
     .ss-status{min-height:16px;margin:6px 0 0;color:#ffcf80;font-size:11px}
     .ss-reset-button{margin-top:8px;color:#d9deea}
-    .ss-orb{position:fixed;left:18px;bottom:18px;z-index:2147483644;display:grid;place-items:center;width:54px;height:54px;border:1px solid rgba(255,255,255,.7);border-radius:50%;background:rgba(116,142,255,.58);box-shadow:0 6px 24px rgba(34,54,130,.4);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);color:white;cursor:pointer;transition:transform .15s,background .15s}
-    .ss-orb:hover{transform:scale(1.07);background:rgba(116,142,255,.82)}
-    .ss-orb svg{width:23px;height:23px}
+    .ss-orb{position:fixed;left:18px;bottom:18px;z-index:2147483644;display:block;width:52px;height:52px;padding:0;border:1px solid rgba(255,255,255,.48);border-radius:50%;background:radial-gradient(circle at 34% 26%,rgba(255,255,255,.3),rgba(226,234,255,.12) 48%,rgba(156,174,216,.2));box-shadow:inset 0 1px 2px rgba(255,255,255,.32),inset 0 -2px 6px rgba(38,51,78,.12),0 4px 16px rgba(24,34,54,.12);backdrop-filter:blur(10px) saturate(135%);-webkit-backdrop-filter:blur(10px) saturate(135%);cursor:pointer;transition:transform .15s,border-color .15s,background .15s}
+    .ss-orb:hover{transform:scale(1.05);border-color:rgba(255,255,255,.7);background:radial-gradient(circle at 34% 26%,rgba(255,255,255,.38),rgba(226,234,255,.16) 48%,rgba(156,174,216,.26))}
+    .ss-orb:focus-visible{outline:2px solid rgba(255,255,255,.9);outline-offset:3px}
     @media(max-width:520px){.ss-backdrop{padding:8vh 10px 12px}.ss-window{border-radius:15px}.ss-searchbar{gap:10px;padding:13px}.ss-input{font-size:17px}.ss-results{max-height:62vh}.ss-result-hint{display:none}.ss-footer{padding:10px 13px}.ss-orb{left:15px;bottom:15px}}
     @media(prefers-reduced-motion:reduce){.ss-window{animation:none}.ss-orb{transition:none}}
   `;
@@ -155,7 +155,6 @@
     orb.type = "button";
     orb.setAttribute("aria-label", "Search links");
     orb.title = "Search links";
-    orb.innerHTML = searchIcon;
     document.body.appendChild(orb);
 
     var input = backdrop.querySelector(".ss-input");
