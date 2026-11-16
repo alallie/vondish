@@ -3,7 +3,7 @@
 
   var STORAGE_KEY = "site-spotlight-settings";
   var DEFAULT_SETTINGS = {
-    shortcut: { ctrl: true, alt: false, shift: true, meta: false, key: "k", code: "KeyK" },
+    shortcut: { ctrl: false, alt: false, shift: false, meta: false, key: "/", code: "Slash" },
     openInNewTab: true
   };
   var styles = `
